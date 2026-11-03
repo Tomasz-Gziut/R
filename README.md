@@ -3,14 +3,17 @@
 Run with:
 
 ```sh
+py -m pip install -r requirements.txt
 python loop.py
 ```
 
 On Windows, the script checks every five seconds whether Fortnite is installed
 and running. It reads Fortnite's install location from the Epic Games Launcher
 manifest, then asks Epic Games Launcher to start Fortnite when it is not
-running. Using the launcher ensures Fortnite starts with the required launch
-parameters. The script does not install the game.
+running. Once the game window is ready, it presses Esc as needed until it
+detects the Battle Royale title and the yellow button below it, then clicks
+that button to start the mode. Screen recognition requires the packages in
+`requirements.txt`. The script does not install the game.
 
 Press **Ctrl+Q anywhere on the computer** to close Fortnite and stop the
 monitor, or use Ctrl+C in the terminal to stop only the monitor. Ctrl+Q
