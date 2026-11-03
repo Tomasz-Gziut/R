@@ -1,4 +1,5 @@
 import ctypes
+import csv
 import json
 import os
 import subprocess
@@ -46,32 +47,30 @@ def find_fortnite_installation():
         if not installation.is_dir():
             continue
 
-        executable = None
-        launch_executable = manifest.get("LaunchExecutable")
-        if launch_executable:
-            candidate = (installation / launch_executable).resolve()
-            try:
-                candidate.relative_to(installation.resolve())
-            except ValueError:
-                pass
-            else:
-                if candidate.is_file():
-                    executable = candidate
-
-        return installation, executable
+        return installation
 
     return None
 
 
 def is_fortnite_running():
     result = subprocess.run(
-        ["tasklist", "/FI", f"IMAGENAME eq {FORTNITE_PROCESS}", "/NH"],
+        [
+            "tasklist",
+            "/FI",
+            f"IMAGENAME eq {FORTNITE_PROCESS}",
+            "/FO",
+            "CSV",
+            "/NH",
+        ],
         capture_output=True,
         text=True,
         check=True,
         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
     )
-    return FORTNITE_PROCESS.casefold() in result.stdout.casefold()
+    return any(
+        row and row[0].casefold() == FORTNITE_PROCESS.casefold()
+        for row in csv.reader(result.stdout.splitlines())
+    )
 
 
 def listen_for_quit(stop_event, ready_event, errors):
@@ -146,12 +145,8 @@ def main():
 
             if installed != was_installed:
                 if installed:
-                    installation, executable = installation_info
+                    installation = installation_info
                     print(f"Fortnite detected at: {installation}")
-                    if executable:
-                        print(f"Launch executable: {executable}")
-                    else:
-                        print("No launch executable was found in the Epic manifest.")
                 else:
                     print("Fortnite is not installed; it cannot be launched.")
                 was_installed = installed
@@ -159,14 +154,13 @@ def main():
             if installed and not is_fortnite_running():
                 now = time.monotonic()
                 if last_launch is None or now - last_launch >= LAUNCH_RETRY_INTERVAL:
-                    installation, executable = installation_info
+                    installation = installation_info
                     try:
-                        if executable:
-                            print(f"Launching Fortnite from: {executable}")
-                            subprocess.Popen([str(executable)], cwd=installation)
-                        else:
-                            print("Launching Fortnite through Epic Games Launcher.")
-                            os.startfile(FORTNITE_URI)
+                        print(
+                            "Launching Fortnite through Epic Games Launcher "
+                            f"(installed at: {installation})."
+                        )
+                        os.startfile(FORTNITE_URI)
                     except OSError as error:
                         print(f"Could not launch Fortnite: {error}")
                     last_launch = now
