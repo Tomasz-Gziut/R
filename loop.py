@@ -73,6 +73,21 @@ def is_fortnite_running():
     )
 
 
+def close_fortnite():
+    if not is_fortnite_running():
+        return
+
+    result = subprocess.run(
+        ["taskkill", "/IM", FORTNITE_PROCESS, "/T", "/F"],
+        capture_output=True,
+        text=True,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    if result.returncode:
+        detail = (result.stderr or result.stdout).strip()
+        raise RuntimeError(detail or "taskkill could not close Fortnite.")
+
+
 def listen_for_quit(stop_event, ready_event, errors):
     user32 = ctypes.WinDLL("user32", use_last_error=True)
     user32.RegisterHotKey.argtypes = [
@@ -107,6 +122,10 @@ def listen_for_quit(stop_event, ready_event, errors):
             if result == 0:
                 break
             if message.message == WM_HOTKEY and message.wParam == HOTKEY_ID:
+                try:
+                    close_fortnite()
+                except (OSError, RuntimeError) as error:
+                    errors.append(error)
                 stop_event.set()
                 break
     except OSError as error:
@@ -172,7 +191,7 @@ def main():
         stop_event.set()
         print("Fortnite monitor stopped.")
         if hotkey_errors:
-            print(f"Global hotkey listener failed: {hotkey_errors[0]}")
+            print(f"Ctrl+Q action failed: {hotkey_errors[0]}")
 
 
 if __name__ == "__main__":

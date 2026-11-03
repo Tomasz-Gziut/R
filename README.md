@@ -12,6 +12,7 @@ manifest, then asks Epic Games Launcher to start Fortnite when it is not
 running. Using the launcher ensures Fortnite starts with the required launch
 parameters. The script does not install the game.
 
-Press **Ctrl+Q anywhere on the computer** to quit, or use Ctrl+C in the terminal.
-If another application already owns Ctrl+Q as a global hotkey, the script will
-report that it could not register it.
+Press **Ctrl+Q anywhere on the computer** to close Fortnite and stop the
+monitor, or use Ctrl+C in the terminal to stop only the monitor. Ctrl+Q
+force-closes Fortnite. If another application already owns Ctrl+Q as a global
+hotkey, the script will report that it could not register it.
