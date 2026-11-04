@@ -11,7 +11,7 @@ if not errorlevel 1 (
 py -m pip install -r requirements.txt pyinstaller
 if errorlevel 1 exit /b %errorlevel%
 
-py -m PyInstaller --clean --noconfirm --onefile --console --name ScreenshotHotkey screenshot.py
+py -m PyInstaller --clean --noconfirm --onefile --console --add-data "assets\replay_button.png;assets" --name ScreenshotHotkey screenshot.py
 if errorlevel 1 exit /b %errorlevel%
 
 copy /Y "dist\ScreenshotHotkey.exe" "ScreenshotHotkey.exe" >nul
