@@ -1,21 +1,19 @@
-# Fortnite monitor
+# Screenshot hotkey
 
-Run with:
+Install the dependency and start the listener:
 
 ```sh
 py -m pip install -r requirements.txt
-python loop.py
+py screenshot.py
 ```
 
-On Windows, the script checks every five seconds whether Fortnite is installed
-and running. It reads Fortnite's install location from the Epic Games Launcher
-manifest, then asks Epic Games Launcher to start Fortnite when it is not
-running. Once the game window is ready, it presses Esc as needed until it
-detects the Battle Royale title and the yellow button below it, then clicks
-that button to start the mode. Screen recognition requires the packages in
-`requirements.txt`. The script does not install the game.
+To build a standalone Windows executable, run `build_exe.bat`. It installs
+PyInstaller if needed and creates `ScreenshotHotkey.exe` in the repository
+root (and a copy in `dist\`). Run it and leave it open to keep the hotkey
+active; captures are saved in the `screenshots` folder beside the executable.
 
-Press **Ctrl+Q anywhere on the computer** to close Fortnite and stop the
-monitor, or use Ctrl+C in the terminal to stop only the monitor. Ctrl+Q
-force-closes Fortnite. If another application already owns Ctrl+Q as a global
-hotkey, the script will report that it could not register it.
+While it is running, press **Ctrl+`** or **Ctrl+Shift+`** (the backtick/tilde
+key) anywhere on Windows to save a PNG of the primary display. Both variants
+are registered to support different keyboard layouts. Each capture gets a
+timestamped filename. Press Ctrl+C in the terminal to stop the listener. If
+another application already owns both hotkeys, the script reports the error.

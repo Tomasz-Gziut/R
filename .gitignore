@@ -1,0 +1,7 @@
+/screenshots/
+/build/
+/dist/
+/ScreenshotHotkey.exe
+/*.spec
+__pycache__/
+*.py[cod]
