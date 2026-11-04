@@ -9,14 +9,13 @@ py screenshot.py
 
 To build a standalone Windows executable, run `build_exe.bat`. It installs
 PyInstaller if needed and creates `ScreenshotHotkey.exe` in the repository
-root (and a copy in `dist\`). Run it and leave it open to keep the hotkey
-active; captures are saved in the `screenshots` folder beside the executable.
+root (and a copy in `dist\`). The one-file executable bundles the Python
+runtime, this script, its imported dependencies, and the button template.
+Run it and leave it open; it checks the screen every 10 seconds and saves
+captures in `C:\Screenshots`.
 
-While it is running, press **Ctrl+`** or **Ctrl+Shift+`** (the backtick/tilde
-key) anywhere on Windows to save a PNG of the primary display. Both variants
-are registered to support different keyboard layouts. Each capture gets a
-timestamped filename, then searches only the expected button area for the
-**ZAGRAJ PONOWNIE** image in `assets\replay_button.png`. The console prints
-`True` or `False`; when matched, the cursor moves to the button center and
-left-clicks it. Press Ctrl+C in the terminal to stop the listener. If another
-application already owns both hotkeys, the script reports the error.
+Each capture gets a timestamped filename, then searches only the expected
+button area for the **ZAGRAJ PONOWNIE** image in `assets\replay_button.png`.
+The console prints `True` or `False`, then deletes the screenshot in either
+case. When matched, the cursor moves to the button center and left-clicks it.
+Press Ctrl+C in the terminal to stop the process.

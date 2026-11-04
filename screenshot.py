@@ -3,21 +3,14 @@ from ctypes import wintypes
 from datetime import datetime
 from pathlib import Path
 import sys
+import time
 
 import mss
 import mss.tools
 import cv2
 
 
-MOD_CONTROL = 0x0002
-MOD_SHIFT = 0x0004
-MOD_NOREPEAT = 0x4000
-HOTKEYS = (
-    (1, MOD_CONTROL),
-    (2, MOD_CONTROL | MOD_SHIFT),
-)
-VK_OEM_3 = 0xC0
-WM_HOTKEY = 0x0312
+RUN_INTERVAL_SECONDS = 10
 REFERENCE_SIZE = (2559, 1437)
 MATCH_REGION = (0.66, 0.43, 0.97, 0.59)
 MATCH_SCALES = tuple(index / 100 for index in range(85, 116, 5))
@@ -30,7 +23,7 @@ APP_DIR = (
     else Path(__file__).resolve().parent
 )
 RESOURCE_DIR = Path(getattr(sys, "_MEIPASS", APP_DIR))
-SCREENSHOT_DIR = APP_DIR / "screenshots"
+SCREENSHOT_DIR = Path(r"C:\Screenshots")
 TEMPLATE_PATH = RESOURCE_DIR / "assets" / "replay_button.png"
 
 
@@ -94,48 +87,6 @@ def click_position(user32, monitor, position):
     user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
 
 
-def register_hotkey(user32):
-    user32.RegisterHotKey.argtypes = [
-        wintypes.HWND,
-        ctypes.c_int,
-        wintypes.UINT,
-        wintypes.UINT,
-    ]
-    user32.RegisterHotKey.restype = wintypes.BOOL
-    registered = []
-    errors = []
-    for hotkey_id, modifiers in HOTKEYS:
-        if user32.RegisterHotKey(
-            None, hotkey_id, modifiers | MOD_NOREPEAT, VK_OEM_3
-        ):
-            registered.append(hotkey_id)
-        else:
-            errors.append(ctypes.get_last_error())
-    if not registered:
-        raise ctypes.WinError(errors[0])
-    return registered
-
-
-def listen_for_hotkey(user32, registered_hotkeys):
-    user32.GetMessageW.argtypes = [
-        ctypes.POINTER(wintypes.MSG),
-        wintypes.HWND,
-        wintypes.UINT,
-        wintypes.UINT,
-    ]
-    user32.GetMessageW.restype = ctypes.c_int
-
-    message = wintypes.MSG()
-    while True:
-        result = user32.GetMessageW(ctypes.byref(message), None, 0, 0)
-        if result == -1:
-            raise ctypes.WinError(ctypes.get_last_error())
-        if result == 0:
-            return
-        if message.message == WM_HOTKEY and message.wParam in registered_hotkeys:
-            save_screenshot()
-
-
 def save_screenshot():
     SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
     filename = datetime.now().strftime("screenshot_%Y%m%d_%H%M%S_%f.png")
@@ -163,34 +114,37 @@ def save_screenshot():
         mss.tools.to_png(image.rgb, image.size, output=str(destination))
 
     print(f"Screenshot saved: {destination}", flush=True)
-    button_position = find_replay_button(destination)
-    if button_position is not None:
-        user32 = ctypes.WinDLL("user32", use_last_error=True)
-        click_position(user32, primary, button_position)
-        print(True, flush=True)
-        print(f"Clicked replay button at {button_position}", flush=True)
-    else:
-        print(False, flush=True)
+    try:
+        button_position = find_replay_button(destination)
+        print(button_position is not None, flush=True)
+        if button_position is not None:
+            user32 = ctypes.WinDLL("user32", use_last_error=True)
+            click_position(user32, primary, button_position)
+            print(f"Clicked replay button at {button_position}", flush=True)
+    finally:
+        destination.unlink(missing_ok=True)
+        print(f"Deleted screenshot: {destination}", flush=True)
+
+
+def run_periodically():
+    while True:
+        started = time.monotonic()
+        save_screenshot()
+        remaining = RUN_INTERVAL_SECONDS - (time.monotonic() - started)
+        if remaining > 0:
+            time.sleep(remaining)
 
 
 def main():
     if not hasattr(ctypes, "WinDLL"):
         raise OSError("This global-hotkey script only works on Windows.")
 
-    user32 = ctypes.WinDLL("user32", use_last_error=True)
-    registered_hotkeys = register_hotkey(user32)
     print(
-        f"Listening for Ctrl+` and Ctrl+Shift+`. "
-        f"Saving screenshots to: {SCREENSHOT_DIR}",
+        f"Checking for the replay button every {RUN_INTERVAL_SECONDS} seconds. "
+        f"Screenshots: {SCREENSHOT_DIR}",
         flush=True,
     )
-    try:
-        listen_for_hotkey(user32, registered_hotkeys)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        for hotkey_id in registered_hotkeys:
-            user32.UnregisterHotKey(None, hotkey_id)
+    run_periodically()
 
 
 if __name__ == "__main__":
